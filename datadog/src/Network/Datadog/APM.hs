@@ -445,12 +445,8 @@ newtype NoTraceT m a = NoTraceT
              , MonadCatch
              , MonadMask
              , MonadFail
+             , MonadUnliftIO
              )
-
-instance MonadUnliftIO m => MonadUnliftIO (NoTraceT m) where
-  askUnliftIO = NoTraceT $ do
-    (UnliftIO ui) <- askUnliftIO
-    return $ UnliftIO (ui . runNoTraceT)
 
 instance MonadTrans NoTraceT where
   lift = NoTraceT
