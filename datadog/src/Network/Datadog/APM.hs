@@ -62,8 +62,7 @@ module Network.Datadog.APM
   , samplingPriorityKey
   ) where
 
-import Control.Monad.Catch (MonadCatch, MonadThrow, MonadMask)
-import Control.Monad.Fail
+import Control.Monad.Catch (MonadCatch, MonadMask)
 import Control.Exception (throw)
 import Control.Monad.Except
 import Control.Monad.Reader
