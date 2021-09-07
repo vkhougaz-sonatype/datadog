@@ -274,6 +274,50 @@ instance ToJSON Metric where
                  Counter _ -> "counter" :: Text
              ]
 
+instance ToJSON Span where
+  toJSON Span{..} = object'
+    [ "service"   .= spanService
+    , "name"      .= spanName
+    , "resource"  .= spanResource
+    , "trace_id"  .= spanTraceId
+    , "span_id"   .= spanId
+    , "start"     .= spanStart
+    , "duration"  .= spanDuration
+    ]
+    [ "parent_id" .=? spanParentId
+    , "error"     .=? spanError
+    , "meta"      .=? spanMeta
+    , "metrics"   .=? spanMetrics
+    , "type"      .=? spanType
+    ]
+    where
+      key .=? value = (key .=) <$> value
+      object' required optional = object $ required <> catMaybes optional
+
+instance FromJSON Span where
+  parseJSON = withObject "Span" $ \v ->
+    Span <$> v .: "service"
+         <*> v .: "name"
+         <*> v .: "resource"
+         <*> v .: "trace_id"
+         <*> v .: "span_id"
+         <*> v .:? "parent_id" .!= Nothing
+         <*> v .: "start"
+         <*> v .: "duration"
+         <*> v .:? "error" .!= Nothing
+         <*> v .:? "meta" .!= Nothing
+         <*> v .:? "metrics" .!= Nothing
+         <*> v .:? "type" .!= Nothing
+         
+instance ToJSON TraceResponse where
+  toJSON (TraceResponse rates) = object
+    [ "rate_by_service" .= rates
+    ]
+
+instance FromJSON TraceResponse where
+  parseJSON = withObject "TraceResponse" $ \v ->
+    TraceResponse <$> v .: "rate_by_service"
+
 instance ToJSON MonitorType where
   toJSON MetricAlert = Data.Aeson.String "metric alert"
   toJSON ServiceCheck = Data.Aeson.String "service check"

@@ -8,10 +8,12 @@ module Network.Datadog.Types where
 import           Data.ByteString.Char8 (ByteString)
 import           Data.DList (DList)
 import           Data.HashMap.Strict (HashMap)
-import           Data.Semigroup
+import           Data.Semigroup ()
 import           Data.Text (Text)
 import qualified Data.Text as T
-import           Data.Int (Int64)
+import           Data.Int (Int32, Int64)
+import           Data.Map.Strict (Map)
+import           Data.Word (Word64)
 import           Data.Time.Clock (UTCTime, NominalDiffTime)
 import           Data.Time.Clock.POSIX (POSIXTime)
 import           Network.HTTP.Client (Manager)
@@ -221,7 +223,37 @@ data Metric = Metric
   , metricHost   :: Maybe Text
   , metricTags   :: [Text]
   }
- 
+
+data Span = Span
+  { spanService  :: Text
+  , spanName     :: Text
+  , spanResource :: Text
+  , spanTraceId  :: Word64
+  , spanId       :: Word64
+  , spanParentId :: Maybe Word64
+  , spanStart    :: Int64
+  , spanDuration :: Int64
+  , spanError    :: Maybe Int32
+  , spanMeta     :: Maybe (Map Text Text)
+  , spanMetrics  :: Maybe (Map Text Double)
+  , spanType     :: Maybe Text
+  }
+
+-- "rate" is a number between `[0.0, 1.0]` indicating the desired percentage of
+-- traces that the agent wishes to downsample for a given service (`0.0` meaning
+-- dropping everything, `1.0` meaning keeping everything).
+--
+-- Clients should act upon `rate` by setting a `_sampling_priority_v1` field in
+-- `metrics` of the root span, which is an enum `[-1, 0, 1, 2]` indicating:
+--
+--    -1) the agent should drop the trace
+--     0) the agent may drop the trace
+--     1) the agent should try to keep the trace
+--     2) the agent must keep the trace (subject to account limits).
+newtype TraceResponse = TraceResponse
+  { trRateByService :: Map Text Double
+  }
+
 -- | Each monitor is of a specific type, which determines what sort of check
 -- the monitor performs.
 data MonitorType = MetricAlert
