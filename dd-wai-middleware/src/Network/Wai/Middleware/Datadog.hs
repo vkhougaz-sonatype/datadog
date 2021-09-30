@@ -116,7 +116,7 @@ rtsStatReporter client ts = do
     scg "rts.gc.current_bytes_slop" Gauge currentBytesSlop
 -}
 
-apmMiddleware :: APMClient -> Context -> Middleware
+apmMiddleware :: APMClient c => c -> Context -> Middleware
 apmMiddleware client ctxt app req respond = do
   threadId <- myThreadId
   tid <- TraceId <$> uniform traceGenerator

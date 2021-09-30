@@ -5,6 +5,7 @@
 {-# LANGUAGE CPP #-}
 module Network.Datadog.APM
   ( APMClient(..)
+  , DDAPMClient(..)
   , localApmAgentUrl
   , mkApmClient
   , mkApmClient'
@@ -13,7 +14,6 @@ module Network.Datadog.APM
   , MonadTrace(..)
   , NoTraceT(..)
   -- * Low-level implementation support
-  , sendTrace
   , MTrace(..)
   , Trace(..)
   , TraceState(spanStack)
@@ -87,18 +87,24 @@ import System.Clock
 import System.Random.MWC
 import UnliftIO
 
-data APMClient = APMClient
+data DDAPMClient = DDAPMClient
   { apmEndpoint :: IORef Request
   , apmReaper :: Reaper [Trace] Trace
   }
 
+class APMClient c where
+  sendTrace :: MonadIO m => c -> Trace -> m ()
+
+instance APMClient DDAPMClient where
+  sendTrace c = liftIO . reaperAdd (apmReaper c)
+
 localApmAgentUrl :: String
 localApmAgentUrl = "http://localhost:8126"
 
-mkApmClient :: (MonadIO m, MonadThrow m) => String -> m APMClient
+mkApmClient :: (MonadIO m, MonadThrow m) => String -> m DDAPMClient
 mkApmClient str = mkApmClient' str throw
 
-mkApmClient' :: (MonadIO m, MonadThrow m) => String -> (HttpException -> IO ([Trace] -> [Trace])) -> m APMClient
+mkApmClient' :: (MonadIO m, MonadThrow m) => String -> (HttpException -> IO ([Trace] -> [Trace])) -> m DDAPMClient
 mkApmClient' str errHandler = do
   baseReq <- parseRequest str
   ref <- newIORef baseReq
@@ -119,14 +125,12 @@ mkApmClient' str errHandler = do
         }
   rpr <- liftIO $ mkReaper settings
 
-  return $ APMClient
+  return $ DDAPMClient
     { apmEndpoint = ref
     , apmReaper = rpr
     }
 
 
-sendTrace :: MonadIO m => APMClient -> Trace -> m ()
-sendTrace c = liftIO . reaperAdd (apmReaper c)
 
 newtype AppName = AppName Text
   deriving (Show, Eq, Ord, IsString)
