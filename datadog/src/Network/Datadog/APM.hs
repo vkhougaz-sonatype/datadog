@@ -4,7 +4,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE CPP #-}
 module Network.Datadog.APM
-  ( APMClient
+  ( APMClient(..)
   , localApmAgentUrl
   , mkApmClient
   , mkApmClient'
